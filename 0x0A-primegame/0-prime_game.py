@@ -1,34 +1,42 @@
 #!/usr/bin/python3
-"""who's the winner"""
+"""Module to solve Prime Game using Sieve of Eratosthenes Algorithm"""
 
 
 def isWinner(x, nums):
-    """determines the winner of the game"""
+    """Function to determine winner of Prime Game"""
 
-    def win_prime(num):
-        if num < 2:
-            return False
-        for i in range(2, int(num ** 0.5) + 1):
-            if num % i == 0:
-                return False
-        return True
-
-    def the_game(n):
-        nbprm = [i for i in range(2, n + 1) if win_prime(i)]
-        return len(nbprm) % 2 == 1
-
-    maria_wins = 0
-    ben_wins = 0
-
-    for i in range(x):
-        if the_game(nums[i]):
-            maria_wins += 1
-        else:
-            ben_wins += 1
-
-    if maria_wins > ben_wins:
-        return "Maria"
-    elif ben_wins > maria_wins:
-        return "Ben"
-    else:
+    if not nums or x < 1:
         return None
+
+    max_limit = max(nums)
+    is_prime = [True for _ in range(max(max_limit + 1, 2))]
+
+    for i in range(2, int(pow(max_limit, 0.5)) + 1):
+        if not is_prime[i]:
+            continue
+
+        for j in range(i*i, max_limit + 1, i):
+            is_prime[j] = False
+
+    is_prime[0] = is_prime[1] = False
+    cumulative_primes = 0
+
+    for i in range(len(is_prime)):
+        if is_prime[i]:
+            cumulative_primes += 1
+        is_prime[i] = cumulative_primes
+
+    winner = ''
+    score = 0
+
+    for n in nums:
+        score += is_prime[n] % 2 == 1
+
+    if score * 2 == len(nums):
+        winner = None
+    if score * 2 > len(nums):
+        winner = "Maria"
+    else:
+        winner = "Ben"
+
+    return winner
