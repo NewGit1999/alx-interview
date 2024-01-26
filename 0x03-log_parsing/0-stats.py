@@ -1,46 +1,41 @@
 #!/usr/bin/python3
 
-""" script that reads stdin line by line and computes metrics """
-
+"""cript that reads stdin and computes metrics"""
 import sys
 
-
-def printStatus(dic, size):
-    """ Prints information """
-    print("File size: {:d}".format(size))
-    for i in sorted(dic.keys()):
-        if dic[i] != 0:
-            print("{}: {:d}".format(i, dic[i]))
-
-
-# sourcery skip: use-contextlib-suppress
-statusCodes = {"200": 0, "301": 0, "400": 0, "401": 0, "403": 0,
-               "404": 0, "405": 0, "500": 0}
-
-count = 0
-size = 0
+status_codes = {"200": 0, "301": 0, "400": 0, "401": 0,
+                "403": 0, "404": 0, "405": 0, "500": 0}
+total_size = 0
+total_num = 0
 
 try:
     for line in sys.stdin:
-        if count != 0 and count % 10 == 0:
-            printStatus(statusCodes, size)
+        lines = line.split(" ")
 
-        stlist = line.split()
-        count += 1
+        if len(lines) > 4:
+            code = lines[-2]
+            size = int(lines[-1])
 
-        try:
-            size += int(stlist[-1])
-        except Exception:
-            pass
+            if code in status_codes.keys():
+                status_codes[code] += 1
 
-        try:
-            if stlist[-2] in statusCodes:
-                statusCodes[stlist[-2]] += 1
-        except Exception:
-            pass
-    printStatus(statusCodes, size)
+            total_size += size
+            total_num += 1
 
+        if total_num == 10:
+            total_num = 0
+            print("File size: {}".format(total_size))
 
-except KeyboardInterrupt:
-    printStatus(statusCodes, size)
-    raise
+            for k, v in sorted(status_codes.items()):
+                if v != 0:
+                    print("{}: {}".format(k, v))
+
+except Exception:
+    pass
+
+finally:
+    print("File size: {}".format(total_size))
+
+    for k, v in sorted(status_codes.items()):
+        if v != 0:
+            print("{}: {}".format(k, v))
