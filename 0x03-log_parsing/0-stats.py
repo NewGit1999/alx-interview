@@ -2,40 +2,51 @@
 
 """cript that reads stdin and computes metrics"""
 import sys
+import signal
 
-status_codes = {"200": 0, "301": 0, "400": 0, "401": 0,
-                "403": 0, "404": 0, "405": 0, "500": 0}
-total_size = 0
-total_num = 0
+
+total_file_size = 0
+status_code_counts = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0,
+                      404: 0, 405: 0, 500: 0}
+line_count = 0
+
+
+def print_metrics():
+    print(f"Total file size: {total_file_size}")
+    for code in sorted(status_code_counts.keys()):
+        count = status_code_counts[code]
+        if count > 0:
+            print(f"{code}: {count}")
+
+
+def handle_interrupt(signal, frame):
+    print_metrics()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, handle_interrupt)
 
 try:
     for line in sys.stdin:
-        lines = line.split(" ")
+        # Parse the input line
+        parts = line.split()
+        if len(parts) == 7:
+            ip, _, _, date, _, request, status_code, file_size = parts
+            if request == '"GET' and file_size.isdigit():
+                total_file_size += int(file_size)
+                status_code = int(status_code)
+                if status_code in status_code_counts:
+                    status_code_counts[status_code] += 1
+                line_count += 1
 
-        if len(lines) > 4:
-            code = lines[-2]
-            size = int(lines[-1])
+                # Print metrics every 10 lines
+                if line_count % 10 == 0:
+                    print_metrics()
+        else:
+            # Skip lines with incorrect format
+            continue
 
-            if code in status_codes.keys():
-                status_codes[code] += 1
-
-            total_size += size
-            total_num += 1
-
-        if total_num == 10:
-            total_num = 0
-            print("File size: {}".format(total_size))
-
-            for k, v in sorted(status_codes.items()):
-                if v != 0:
-                    print("{}: {}".format(k, v))
-
-except Exception:
-    pass
-
-finally:
-    print("File size: {}".format(total_size))
-
-    for k, v in sorted(status_codes.items()):
-        if v != 0:
-            print("{}: {}".format(k, v))
+except KeyboardInterrupt:
+    # Handle keyboard interruption
+    print_metrics()
+    sys.exit(0)
